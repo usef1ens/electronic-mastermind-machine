@@ -193,6 +193,7 @@ begin
     case(cState)
     ptToA:
     begin
+        LED_Proc = 1'b1;
         codeMaker = 1'b1;
         pickPlayerA = 1'b1;
     end
@@ -207,6 +208,7 @@ begin
     end
     ptToB:
     begin
+        LED_Proc = 1'b1;
         codeMaker = 1'b1;
         pickPlayerB = 1'b1;
     end
