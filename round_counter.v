@@ -9,7 +9,7 @@ always @(*) begin
 end
 
 
-always @(posedge clk or negedge reset) begin // If it is active-low are we supposed to do negedge?
+always @(posedge clk or negedge reset) begin 
     if (reset == 0) begin
         Round <= 2'd0;
     end 
