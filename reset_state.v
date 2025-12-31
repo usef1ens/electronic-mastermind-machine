@@ -1,5 +1,5 @@
 module reset_state(input clk, reset, btn2, 
-output reg clearall, 
+output reg clearall, // Not sure if I had to put every register, or just send the signal to reset and directly reset in each state itself
 output reg restartgame // go to state1
 );
 
