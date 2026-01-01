@@ -4,7 +4,8 @@ output reg [1:0] Round,
 output reg restartgame);
 
 
-always @(*) begin
+always @(*) // combinational block for next state computation
+begin
     restartgame = (Round == 2'd3) || (CountA > 2'd1) || (CountB > 2'd1);
 end
 

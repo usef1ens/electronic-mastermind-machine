@@ -61,10 +61,10 @@ module led_comparator(
     // 3. Blinking Timer Logic
     reg [25:0] timer;     
     reg blink_state;
-    parameter BLINK_SPEED = 25000000; 
+    parameter BLINK_SPEED = 4; 
 
-    always @(posedge clk or posedge reset) begin
-        if (reset) begin
+    always @(posedge clk or negedge reset) begin
+        if (reset == 1'b0) begin
             timer <= 0;
             blink_state <= 0;
         end else if (game_over) begin
