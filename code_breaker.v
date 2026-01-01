@@ -22,6 +22,9 @@ reg [2:0] letters_inputed; // internal counter that counts till 4 to take all in
 reg [3:0] cState; // to store the code for the current state
 reg [3:0] nState; // to store the code for the next state
 
+reg [2:0] delay_timer; // to count the waiting time
+
+
 // encode states, they're 11 
 parameter [3:0] IDLE = 4'd0;
 // 5 states in case A is the codebreaker
@@ -39,16 +42,22 @@ parameter [3:0] LEDproc_B = 4'd9; // to show differences between both codes
 parameter [3:0] B_lostRound = 4'd10; // to give the codemaker a point
 
 // always blocks
-always @ (posedge clk or posedge reset) // for state transitions and reset logic (sequential)
+always @ (posedge clk or negedge reset) // for state transitions and reset logic (sequential)
 begin
     if(reset == 1'b0) // if reset button turns on --> clear all registers and counters, and reset 
     // and go back to the IDLE state
     begin
         cState <= IDLE; // go back to the next state
+        delay_timer <= 3'd0; // nullify the timer
     end
     else // normal flow
     begin
         cState <= nState; // transition to the next state
+        // timer Logic
+        if(cState == lifeA || cState == lifeB || cState == ptToA || cState == ptToB || cState == A_lostRound || cState == B_lostRound)
+            delay_timer <= delay_timer + 1;
+        else
+            delay_timer <= 0;
     end
 end
 
@@ -65,8 +74,11 @@ begin
         end
         else nState = IDLE; // else remain in the IDLE state
     end
-    lifeA: nState = tryA; // at the state where we display the lifes left for A, 
-    // simply progress to the next state defined after it in the ASM chart
+    lifeA: 
+    begin
+    if(delay_timer >= 3) nState = tryA; // transition to the next state only after waiting for the appropriate time
+    else nState = lifeA; // i.e. waiting for 4 cycles
+    end
     tryA: // at this state we take the code of A and perform operations
     begin
         if(letters_inputed == 3'd4) // if we have reached the limit
@@ -83,10 +95,21 @@ begin
         if(lives_counter == 0) nState = A_lostRound;// if we do not have lives left
         else nState = lifeA;
     end
-    ptToA: nState = IDLE; // return transition to IDLE
-    A_lostRound: nState = IDLE; // 
-    lifeB: nState = tryB; // at the state where we display the lifes left for B, 
-    // simply progress to the next state defined after it in the ASM chart
+    ptToA: 
+    begin
+    if(delay_timer >= 3) nState = IDLE; 
+    else nState = ptToA; // return to the IDLE state only after 4 cycles
+    end
+    A_lostRound: 
+    begin
+        if(delay_timer >= 3) nState = IDLE;  // same logic as before
+        else nState = A_lostRound;
+    end
+    lifeB:
+    begin
+        if(delay_timer >= 3) nState = tryB; // transition to the next state only after waiting for the appropriate time
+        else nState = lifeB; // i.e. waiting for 4 cycles
+    end
     tryB: // at this state we take the code of B and perform operations
     begin
         if(letters_inputed == 3'd4) // if we have reached the limit
@@ -103,13 +126,21 @@ begin
         if(lives_counter == 0) nState = B_lostRound;// if we do not have lives left
         else nState = lifeB;
     end
-    ptToB: nState = IDLE; // return transition to IDLE
-    B_lostRound: nState = IDLE; // 
+    ptToB: 
+    begin
+        if(delay_timer >= 3) nState = IDLE; 
+        else nState = ptToB; // return to the IDLE state only after 4 cycles
+    end
+    B_lostRound: 
+    begin
+        if(delay_timer >= 3) nState = IDLE; 
+        else nState = B_lostRound;   
+    end
     default: nState = IDLE; // by default we are at the IDLE state
     endcase
 end
 
-always @ (posedge clk or posedge reset) // for register/counter operations (sequential)
+always @ (posedge clk or negedge reset) // for register/counter operations (sequential)
 begin
     if (reset == 1'b0) // if reset button was activated
     begin
@@ -132,17 +163,21 @@ begin
         end
         tryA:
         begin
-            if(enterA) // only if enterA is pressed
+            if(enterA && SW != 3'b000) // '-' is not accepted, and enter button must be pushed
             begin
-                codebreaker_code <= {codebreaker_code[8:0], SW}; // enter the 3bit input and left shift the register
-                letters_inputed <= letters_inputed + 1'b1; // increment the letter counter
+            codebreaker_code <= {codebreaker_code[8:0], SW}; // enter the 3bit input and left shift the register
+            letters_inputed <= letters_inputed + 1'b1; // increment the letter counter
             end
+            
             // do I need an else statement here?
         end
         ptToA:
         begin
+            if(delay_timer == 0) // only update once
+            begin
             pointsOfA <= pointsOfA + 1'b1; // A wins a point for guessing the code correctly
             updated_round_counter <= updated_round_counter + 1'b1; // we have finalized 1 round
+            end
         end
         LEDproc_A:
         begin
@@ -150,13 +185,16 @@ begin
         end
         A_lostRound:
         begin
+            if(delay_timer == 0) // only update once
+            begin
             pointsOfB <= pointsOfB + 1'b1; // increment the count of the other player
             updated_round_counter <= updated_round_counter + 1'b1; // we have finalized 1 round
+            end
         end
         
         tryB:
         begin
-            if(enterB) // only if enterA is pressed
+            if(enterB && SW != 3'b000) // only if enterB is pressed
             begin
                 codebreaker_code <= {codebreaker_code[8:0], SW}; // enter the 3bit input and left shift the register
                 letters_inputed <= letters_inputed + 1'b1; // increment the letter counter
@@ -165,8 +203,11 @@ begin
         end
         ptToB:
         begin
+            if(delay_timer == 0)
+            begin
             pointsOfB <= pointsOfB + 1'b1; // A wins a point for guessing the code correctly
             updated_round_counter <= updated_round_counter + 1'b1; // we have finalized 1 round
+            end
         end
         LEDproc_B:
         begin
@@ -174,8 +215,11 @@ begin
         end
         B_lostRound:
         begin
+            if(delay_timer == 0)
+            begin
             pointsOfA <= pointsOfA + 1'b1; // increment the count of the other player
             updated_round_counter <= updated_round_counter + 1'b1; // we have finalized 1 round
+            end
         end
 
         default: cState <= IDLE; // if we do not know where we are, then by default we are at the IDLE state
