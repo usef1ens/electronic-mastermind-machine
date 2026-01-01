@@ -45,6 +45,7 @@ begin // Computational / moore
     started = 1'b0; // default values of signals
     active_p = 1'b0;
     take_code = 1'b0;
+    clearRegs = 1'b1; // default value of the clear signal
     case(state)
     start: clearRegs = 1'b0;
     PA: 
