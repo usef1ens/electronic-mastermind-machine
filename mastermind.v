@@ -1,12 +1,12 @@
 module mastermind(
     input clk,
-    input reset, // Active low hard reset based on your chart
+    input reset,
     
     input enterA,
     input enterB,
     input [2:0] SW,         
     
-    // Outputs
+    // outputs
     output [1:0] round_count_disp, 
     output [1:0] scoreA_disp, scoreB_disp, 
     output [11:0] leds_debug, 
@@ -24,18 +24,18 @@ module mastermind(
     wire round_restart;
     wire [1:0] current_round;
 
-    // Registers for FSM
+    // register
     reg playerA_is_maker; 
     reg [2:0] main_state; 
     reg [2:0] next_state;
     
-    // Registers for Active Player Logic (Next Values)
+    // registers for active player logic
     reg next_maker;
 
-    // State Encodings
+    // state encodings
     parameter ST_START = 3'd0, ST_MAKER = 3'd1, ST_BREAKER = 3'd2, ST_FINISH = 3'd3;
 
-    // --- Submodules ---
+    // submodules
 
     start_state START_UNIT (
         .clk(clk), .reset(reset), .enterA(enterA), .enterB(enterB),
@@ -73,7 +73,6 @@ module mastermind(
         .pickPlayerA(breaker_pickA), .pickPlayerB(breaker_pickB)
     );
 
-    // NOTE: start_clearRegs is used here to soft-reset the round/scores if needed
     round_counter ROUND_UNIT (
         .clk(clk), .reset(reset && !start_clearRegs), 
         .round_done(breaker_codeMaker), 
@@ -94,18 +93,14 @@ module mastermind(
         .leds(led_feedback)
     );
     
-    // =========================================================================
-    // 4-BLOCK FSM IMPLEMENTATION (Reset + Active Player Logic)
-    // =========================================================================
-
-    // BLOCK 1 & 3: Sequential Logic (State Memory & Data Memory)
-    // Implements the Reset Chart
-    always @(posedge clk or negedge reset) 
+    
+    // Main ASM (to implement the active player and the reset module logic in the ASM charts)
+    always @(posedge clk or negedge reset) // sequential block for next state assignment and reset logic
     begin
         if(reset == 1'b0) 
         begin
             main_state <= ST_START; 
-            playerA_is_maker <= 1'b1; // Default reset value
+            playerA_is_maker <= 1'b1; // default reset value
         end 
         else 
         begin
@@ -114,69 +109,66 @@ module mastermind(
         end
     end
 
-    // BLOCK 2: Combinational Next-State Logic
-    // Handles Transitions between ST_START, ST_MAKER, etc.
-    always @(*) 
+    always @(*) // combinational block for next state computation
     begin
-        next_state = main_state; // Default to stay in current state
+        next_state = main_state; // default to stay in current state
 
         case(main_state)
-            ST_START: begin
+            ST_START: 
+            begin
                 if(start_started) next_state = ST_MAKER;
             end
-            ST_MAKER: begin
+            ST_MAKER: 
+            begin
                 if(maker_started) next_state = ST_BREAKER;
             end
-            ST_BREAKER: begin
-                if (round_restart) begin
+            ST_BREAKER: 
+            begin
+                if (round_restart) 
+                begin
                     next_state = ST_FINISH;
                 end
-                else if(updated_rounds != current_round) begin
+                else if(updated_rounds != current_round) 
+                begin
                     next_state = ST_MAKER; 
                 end
             end
-            ST_FINISH: begin
-                // Game Over: Stay here until Hard Reset (BTN2)
+            ST_FINISH: 
+            begin
                 next_state = ST_FINISH;
             end
             default: next_state = ST_START;
         endcase
     end
 
-    // BLOCK 4: Combinational Data Logic (Active Player Chart)
-    // Implements the Active Player Chart
+    // combinational block that implements the active player logic
     always @(*) 
     begin
-        // 1. Default Assignments
+        // default
         next_maker = playerA_is_maker; 
-
-        // 2. Logic based on Main State
+       
         case(main_state)
-            ST_START: begin
-                // "Active Player State" logic from your chart
-                // The chart says if Started=1, check Active_P and Take_code.
-                // start_active_p comes from START_UNIT. 
-                // If Active_P=0 (Player A), Take_code=1 -> Player A is Maker.
-                if (start_started) begin
-                     // Direct mapping from your chart:
-                     // If start_active_p is 0 (Player A), they become Maker (1).
-                     // If start_active_p is 1 (Player B), they become Maker (0).
-                     // NOTE: This assumes start_active_p 0 = Player A.
-                     if (start_active_p == 1'b0) next_maker = 1'b1; // Player A is Maker
-                     else next_maker = 1'b0; // Player B is Maker
+            ST_START: 
+            begin
+                if (start_started) 
+                begin
+                     if (start_active_p == 1'b0) next_maker = 1'b1; // player A is codemaker
+                     else next_maker = 1'b0; // player B is codemaker
                 end
             end
 
-            ST_BREAKER: begin
-                // Logic to swap roles when a round finishes
-                if (updated_rounds != current_round && !round_restart) begin
+            ST_BREAKER: 
+            begin
+                // now swap roles
+                if (updated_rounds != current_round && !round_restart) 
+                begin
                     next_maker = ~playerA_is_maker; 
                 end
             end
         endcase
     end
 
-    // Simulation Assignments
+    // for simulation assignment
     assign round_count_disp = current_round;
     assign scoreA_disp = updated_ptA;
     assign scoreB_disp = updated_ptB;

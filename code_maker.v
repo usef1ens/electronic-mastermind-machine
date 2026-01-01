@@ -14,14 +14,13 @@ module code_maker(
     parameter [1:0] PB   = 2'b10;
     parameter [1:0] DONE = 2'b11; 
 
-    // --- Sequential Block: State Transitions & Data ---
-    always @ (posedge clk or negedge reset) 
+    always @ (posedge clk or negedge reset) // sequential block for state transitions and signals
     begin
         if(reset == 1'b0)
         begin
             state <= IDLE; 
             toR1  <= 12'd0; 
-            ct1   <= 3'd0;
+            ct1 <= 3'd0;
         end
         else 
         begin 
@@ -29,7 +28,7 @@ module code_maker(
                 IDLE: 
                 begin
                     ct1 <= 3'd0; 
-                    // Preserving secret code
+                    // preserving secret code
                     if(codeMaker) 
                     begin
                         if(player_A) state <= PA; 
@@ -42,13 +41,13 @@ module code_maker(
                 begin
                     if (ct1 >= 3'd4) 
                     begin
-                        state <= DONE; // Go to Handshake state
-                        ct1   <= 3'd0;
+                        state <= DONE; 
+                        ct1 <= 3'd0;
                     end
                     else if(enterA) 
                     begin
                         toR1 <= {toR1[8:0], SW}; 
-                        ct1  <= ct1 + 1'b1; 
+                        ct1 <= ct1 + 1'b1; 
                     end
                 end
 
@@ -56,7 +55,7 @@ module code_maker(
                 begin
                     if (ct1 >= 3'd4) 
                     begin
-                        state <= DONE; // Go to Handshake state
+                        state <= DONE; 
                         ct1   <= 3'd0;
                     end
                     else if(enterB) 
@@ -68,7 +67,7 @@ module code_maker(
                 
                 DONE: 
                 begin
-                    // Wait here until Top Module acknowledges by lowering codeMaker
+                    // wait here until mastermind module knows by lowering codeMaker
                     if (!codeMaker) state <= IDLE; 
                 end
                 
@@ -77,26 +76,26 @@ module code_maker(
         end
     end
 
-    // --- Combinational Block: Output Logic ---
-    always @ (*) 
+    always @ (*) // combinational block for output logic
     begin
-        // Default Defaults
+        // default values
         active_p  = 1'b0;
         take_code = 1'b0;
-        started   = 1'b0; // Default Low
+        started = 1'b0;
 
         case(state)
-            PA: begin
+            PA: 
+            begin
                 active_p  = 1'b0;
                 take_code = 1'b1; 
             end
-            PB: begin
+            PB: 
+            begin
                 active_p  = 1'b1;
                 take_code = 1'b1; 
             end
-            DONE: begin
-                // CRITICAL FIX: Purely combinational High signal
-                // As long as we are in DONE, this is HARD HIGH.
+            DONE: 
+            begin
                 started   = 1'b1; 
             end
         endcase

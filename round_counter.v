@@ -10,14 +10,18 @@ begin
 end
 
 
-always @(posedge clk or negedge reset) begin 
-    if (reset == 0) begin
+always @(posedge clk or negedge reset) 
+begin 
+    if (reset == 0) 
+    begin
         Round <= 2'd0;
     end 
-    else if (restartgame) begin
-        Round <= 2'd0; // "Round <- 0"
+    else if (restartgame) 
+    begin
+        Round <= 2'd0; 
     end 
-    else if (round_done && (restartgame == 0)) begin
+    else if (round_done && (restartgame == 0)) 
+    begin
         Round <= Round + 2'd1; // next round
     end
 end

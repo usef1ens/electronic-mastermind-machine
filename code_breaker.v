@@ -196,17 +196,17 @@ module code_breaker(input clk, reset, codeBreaker, player_A, player_B,
 
                 lifeA:
                 begin
-                    // NOTE: Reset letters_inputed counter when starting/retrying a guess
+                    // reset letters_inputed counter when starting/retrying a guess
                     letters_inputed <= 3'd0;
-                    // NOTE: Clear previous guess when starting new attempt
+                    // clear previous guess when starting new attempt
                     codebreaker_code <= 12'd0;
                 end
 
                 lifeB:
                 begin
-                    // NOTE: Reset letters_inputed counter when starting/retrying a guess
+                    // reset letters_inputed counter when starting/retrying a guess
                     letters_inputed <= 3'd0;
-                    // NOTE: Clear previous guess when starting new attempt
+                    // clear previous guess when starting new attempt
                     codebreaker_code <= 12'd0;
                 end
 
@@ -294,8 +294,8 @@ module code_breaker(input clk, reset, codeBreaker, player_A, player_B,
             ptToA:
             begin
                 LED_Proc = 1'b1;
-                // NOTE: Only pulse codeMaker for 1 cycle!
-                // Otherwise round_counter increments 4 times (0->1->2->3->0).
+                // only pulse codeMaker for 1 cycle
+                // Otherwise round_counter increments 4 times
                 if (delay_timer == 3'd0)
                 begin
                     codeMaker = 1'b1;
@@ -310,7 +310,6 @@ module code_breaker(input clk, reset, codeBreaker, player_A, player_B,
 
             A_lostRound:
             begin
-                // NOTE: Gated with timer
                 if (delay_timer == 3'd0)
                 begin
                     codeMaker = 1'b1;
@@ -321,7 +320,6 @@ module code_breaker(input clk, reset, codeBreaker, player_A, player_B,
             ptToB:
             begin
                 LED_Proc = 1'b1;
-                // NOTE: Gated with timer
                 if (delay_timer == 3'd0)
                 begin
                     codeMaker = 1'b1;
@@ -336,7 +334,6 @@ module code_breaker(input clk, reset, codeBreaker, player_A, player_B,
 
             B_lostRound:
             begin
-                // NOTE: Gated with timer
                 if (delay_timer == 3'd0)
                 begin
                     codeMaker = 1'b1;
